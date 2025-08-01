@@ -363,15 +363,42 @@ def main():
         # Display chat messages
         for i, message in enumerate(st.session_state.messages):
             if message["role"] == "user":
-                # User message with copy functionality
-                st.markdown(f'<div class="user-message">{message["content"]}</div>', unsafe_allow_html=True)
+                # User message with integrated copy button
+                message_content = message["content"].replace('"', '\\"').replace('\n', '\\n')
+                copy_script = f"""
+                <script>
+                function copyText_{i}() {{
+                    const text = `{message_content}`;
+                    if (navigator.clipboard && window.isSecureContext) {{
+                        navigator.clipboard.writeText(text).then(() => {{
+                            const button = document.getElementById('copy-btn-{i}');
+                            button.innerHTML = '✅';
+                            setTimeout(() => {{
+                                button.innerHTML = '<div class="copy-icon"></div>';
+                            }}, 1000);
+                        }});
+                    }} else {{
+                        // Fallback for older browsers
+                        const textArea = document.createElement('textarea');
+                        textArea.value = text;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        
+                        const button = document.getElementById('copy-btn-{i}');
+                        button.innerHTML = '✅';
+                        setTimeout(() => {{
+                            button.innerHTML = '<div class="copy-icon"></div>';
+                        }}, 1000);
+                    }}
+                }}
+                </script>
+                """
+                st.markdown(copy_script, unsafe_allow_html=True)
                 
-                # Copy button that displays the text in a selectable format
-                if st.button("📋", key=f"copy_{i}", help="Copy question"):
-                    st.success("Question copied")
-                    # Display the text in a code block for easy selection and copying
-                    st.code(message["content"], language="text")
-                    
+                # User message panel with copy button integrated at the end
+                st.markdown(f'<div class="user-message" style="position: relative; padding-right: 40px;">{message["content"]}<button id="copy-btn-{i}" onclick="copyText_{i}()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; cursor: pointer; padding: 5px;" title="Copy question"><div class="copy-icon"></div></button></div>', unsafe_allow_html=True)
             else:
                 # Bot message (no copy button)
                 st.markdown(f'<div class="bot-message">{message["content"]}</div>', unsafe_allow_html=True)
