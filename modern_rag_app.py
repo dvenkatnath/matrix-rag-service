@@ -2,17 +2,40 @@ import streamlit as st
 import os
 import tempfile
 from pathlib import Path
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_chroma import Chroma
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import (
-    PyPDFDirectoryLoader,
-    CSVLoader,
-    UnstructuredExcelLoader,
-    UnstructuredWordDocumentLoader,
-    TextLoader,
-    UnstructuredPDFLoader
-)
+import sys
+
+# Try to import langchain components with error handling
+try:
+    from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+except ImportError as e:
+    st.error(f"Failed to import langchain_openai: {e}")
+    st.stop()
+
+try:
+    from langchain_chroma import Chroma
+except ImportError as e:
+    st.error(f"Failed to import langchain_chroma: {e}")
+    st.stop()
+
+try:
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+except ImportError as e:
+    st.error(f"Failed to import langchain_text_splitters: {e}")
+    st.stop()
+
+try:
+    from langchain_community.document_loaders import (
+        PyPDFDirectoryLoader,
+        CSVLoader,
+        UnstructuredExcelLoader,
+        UnstructuredWordDocumentLoader,
+        TextLoader,
+        UnstructuredPDFLoader
+    )
+except ImportError as e:
+    st.error(f"Failed to import document loaders: {e}")
+    st.stop()
+
 from uuid import uuid4
 from dotenv import load_dotenv
 import chardet
