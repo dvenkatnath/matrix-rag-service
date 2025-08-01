@@ -26,8 +26,7 @@ vector_store = Chroma(
 # Set up the retriever with better parameters for more accurate answers
 retriever = vector_store.as_retriever(
     search_kwargs={
-        'k': 8,  # Retrieve more documents for better coverage
-        'score_threshold': 0.7  # Only retrieve highly relevant documents
+        'k': 10  # Retrieve more documents for better coverage
     }
 )
 
@@ -53,6 +52,8 @@ def stream_response(message, history):
         4. Do not add any external information or assumptions
         5. Do not mention that the knowledge was retrieved from documents
         6. If asked about a person, provide their full name, role, and relevant details from the documents
+        7. Search carefully through all the provided knowledge for relevant information
+        8. If you find information about the person, provide a comprehensive answer with all available details
         
         The question: {message}
         
@@ -60,7 +61,7 @@ def stream_response(message, history):
         
         The knowledge: {knowledge}
         
-        Answer the question based on the knowledge provided above:
+        Answer the question based on the knowledge provided above. If you find information about the person, provide a detailed response:
         """
 
         # Stream response to the Gradio UI
