@@ -352,7 +352,7 @@ def main():
                     const button = document.getElementById('copy-btn-{i}');
                     button.innerHTML = '✅';
                     setTimeout(() => {{
-                        button.innerHTML = '📋';
+                        button.innerHTML = '⏷';
                     }}, 1000);
                 }}
                 </script>
@@ -360,7 +360,7 @@ def main():
                 st.markdown(copy_script, unsafe_allow_html=True)
                 
                 # Copy button positioned after the message
-                st.markdown(f'<div style="text-align: right; margin-top: 5px;"><button id="copy-btn-{i}" onclick="copyText_{i}()" style="background: none; border: none; cursor: pointer; font-size: 16px; padding: 5px; color: #6c757d;" title="Copy response">📋</button></div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="text-align: right; margin-top: 5px;"><button id="copy-btn-{i}" onclick="copyText_{i}()" style="background: none; border: none; cursor: pointer; font-size: 16px; padding: 5px; color: #6c757d;" title="Copy response">⏷</button></div>', unsafe_allow_html=True)
     
     # Chat input
     if prompt := st.chat_input("Ask a question about your documents..."):
