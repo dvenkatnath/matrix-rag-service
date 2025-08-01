@@ -54,14 +54,15 @@ st.markdown("""
     }
     
     .user-message {
-        background: #007bff;
-        color: white;
+        background: #f8f9fa;
+        color: #495057;
         padding: 0.75rem 1rem;
         border-radius: 15px;
         margin: 0.5rem 0;
         text-align: right;
         max-width: 80%;
         margin-left: auto;
+        border: 1px solid #e9ecef;
     }
     
     .bot-message {
@@ -338,7 +339,10 @@ def main():
             if message["role"] == "user":
                 st.markdown(f'<div class="user-message">{message["content"]}</div>', unsafe_allow_html=True)
             else:
-                # Bot message with copy button
+                # Bot message
+                st.markdown(f'<div class="bot-message">{message["content"]}</div>', unsafe_allow_html=True)
+                
+                # Copy button after the message
                 message_content = message["content"].replace('"', '\\"').replace('\n', '\\n')
                 copy_script = f"""
                 <script>
@@ -355,11 +359,8 @@ def main():
                 """
                 st.markdown(copy_script, unsafe_allow_html=True)
                 
-                col1, col2 = st.columns([20, 1])
-                with col1:
-                    st.markdown(f'<div class="bot-message">{message["content"]}</div>', unsafe_allow_html=True)
-                with col2:
-                    st.markdown(f'<button id="copy-btn-{i}" onclick="copyText_{i}()" style="background: none; border: none; cursor: pointer; font-size: 16px; padding: 5px;" title="Copy response">📋</button>', unsafe_allow_html=True)
+                # Copy button positioned after the message
+                st.markdown(f'<div style="text-align: right; margin-top: 5px;"><button id="copy-btn-{i}" onclick="copyText_{i}()" style="background: none; border: none; cursor: pointer; font-size: 16px; padding: 5px; color: #6c757d;" title="Copy response">📋</button></div>', unsafe_allow_html=True)
     
     # Chat input
     if prompt := st.chat_input("Ask a question about your documents..."):
