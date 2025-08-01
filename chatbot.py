@@ -26,7 +26,7 @@ vector_store = Chroma(
 # Set up the retriever with better parameters for more accurate answers
 retriever = vector_store.as_retriever(
     search_kwargs={
-        'k': 10  # Retrieve more documents for better coverage
+        'k': 15  # Retrieve more documents for better coverage and summarization
     }
 )
 
@@ -43,17 +43,19 @@ def stream_response(message, history):
         partial_message = ""
 
         rag_prompt = f"""
-        You are an expert assistant answering questions based on the provided knowledge.
+        You are an expert assistant that can answer questions, provide summaries, and analyze information based on the provided knowledge.
         
         IMPORTANT INSTRUCTIONS:
         1. Answer ONLY using the information provided in "The knowledge" section
-        2. If the knowledge doesn't contain enough information to answer the question, say "I don't have enough information to answer this question based on the available documents."
+        2. If the knowledge doesn't contain enough information, say "I don't have enough information to answer this question based on the available documents."
         3. Be specific and accurate in your answers
         4. Do not add any external information or assumptions
         5. Do not mention that the knowledge was retrieved from documents
-        6. If asked about a person, provide their full name, role, and relevant details from the documents
-        7. Search carefully through all the provided knowledge for relevant information
-        8. If you find information about the person, provide a comprehensive answer with all available details
+        6. If asked about a person, provide their full name, role, and relevant details
+        7. If asked to summarize, create a comprehensive summary using all relevant information from the knowledge
+        8. If asked for a specific number of sentences, try to match that requirement
+        9. Search carefully through all the provided knowledge for relevant information
+        10. Provide detailed and comprehensive responses when information is available
         
         The question: {message}
         
@@ -61,7 +63,7 @@ def stream_response(message, history):
         
         The knowledge: {knowledge}
         
-        Answer the question based on the knowledge provided above. If you find information about the person, provide a detailed response:
+        Provide a comprehensive answer based on the knowledge provided above:
         """
 
         # Stream response to the Gradio UI
