@@ -12,9 +12,9 @@ except ImportError as e:
     st.stop()
 
 try:
-    from langchain_chroma import Chroma
+    from langchain_community.vectorstores import FAISS
 except ImportError as e:
-    st.error(f"Failed to import langchain_chroma: {e}")
+    st.error(f"Failed to import FAISS vectorstore: {e}")
     st.stop()
 
 try:
@@ -265,22 +265,19 @@ def initialize_models():
         
         # Initialize vector store with error handling for ChromaDB
         try:
-            vector_store = Chroma(
-                collection_name="example_collection",
+            vector_store = FAISS(
                 embedding_function=embeddings_model,
-                persist_directory=CHROMA_PATH,
             )
-        except RuntimeError as chroma_error:
-            st.error(f"ChromaDB initialization error: {chroma_error}")
-            st.info("Trying alternative ChromaDB configuration...")
+        except Exception as chroma_error:
+            st.error(f"FAISS initialization error: {chroma_error}")
+            st.info("Trying alternative FAISS configuration...")
             # Try without persist_directory
             try:
-                vector_store = Chroma(
-                    collection_name="example_collection",
+                vector_store = FAISS(
                     embedding_function=embeddings_model,
                 )
             except Exception as e2:
-                st.error(f"Alternative ChromaDB setup also failed: {e2}")
+                st.error(f"Alternative FAISS setup also failed: {e2}")
                 return None, None, None
         
         # Initialize retriever
@@ -370,13 +367,21 @@ def ingest_documents(documents):
         )
         
         chunks = text_splitter.split_documents(documents)
-        uuids = [str(uuid4()) for _ in range(len(chunks))]
         
-        # Add to vector store
-        st.session_state.vector_store.add_documents(
-            documents=chunks,
-            ids=uuids,
-        )
+        # Add to FAISS vector store
+        if st.session_state.vector_store is None:
+            # Create new FAISS index
+            embeddings_model = OpenAIEmbeddings(
+                model="text-embedding-3-small",
+                openai_api_key=os.getenv("OPENAI_API_KEY")
+            )
+            st.session_state.vector_store = FAISS.from_documents(chunks, embeddings_model)
+        else:
+            # Add to existing FAISS index
+            st.session_state.vector_store.add_documents(chunks)
+        
+        # Update retriever
+        st.session_state.retriever = st.session_state.vector_store.as_retriever(search_kwargs={'k': 5})
         
         return True
     except Exception as e:
