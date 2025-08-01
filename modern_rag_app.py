@@ -268,11 +268,9 @@ def get_response(user_message):
 
 # Main application
 def main():
-    # Header
-    st.markdown('<div class="main-header"><h1>🤖 Matrix RAG Service</h1><p>Intelligent Document Processing & Chat Interface</p></div>', unsafe_allow_html=True)
-    
     # Sidebar
     with st.sidebar:
+        st.markdown("### 🤖 Matrix - RAG Service")
         st.markdown("### ⚙️ Configuration")
         
         # Check API key
@@ -325,7 +323,6 @@ def main():
                             st.markdown('<div class="status-success">✅ Documents ingested successfully!</div>', unsafe_allow_html=True)
     
     # Main content area - Full width chat
-    st.markdown("### 💬 Chat Interface")
     
     # Chat container
     chat_container = st.container()
