@@ -321,6 +321,11 @@ def main():
                         success = ingest_documents(documents)
                         if success:
                             st.markdown('<div class="status-success">✅ Documents ingested successfully!</div>', unsafe_allow_html=True)
+        
+        # Clear chat button
+        if st.button("🗑️ Clear Chat"):
+            st.session_state.messages = []
+            st.rerun()
     
     # Main content area - Full width chat
     
@@ -329,11 +334,32 @@ def main():
     
     with chat_container:
         # Display chat messages
-        for message in st.session_state.messages:
+        for i, message in enumerate(st.session_state.messages):
             if message["role"] == "user":
                 st.markdown(f'<div class="user-message">{message["content"]}</div>', unsafe_allow_html=True)
             else:
-                st.markdown(f'<div class="bot-message">{message["content"]}</div>', unsafe_allow_html=True)
+                # Bot message with copy button
+                message_content = message["content"].replace('"', '\\"').replace('\n', '\\n')
+                copy_script = f"""
+                <script>
+                function copyText_{i}() {{
+                    navigator.clipboard.writeText("{message_content}");
+                    // Show feedback
+                    const button = document.getElementById('copy-btn-{i}');
+                    button.innerHTML = '✅';
+                    setTimeout(() => {{
+                        button.innerHTML = '📋';
+                    }}, 1000);
+                }}
+                </script>
+                """
+                st.markdown(copy_script, unsafe_allow_html=True)
+                
+                col1, col2 = st.columns([20, 1])
+                with col1:
+                    st.markdown(f'<div class="bot-message">{message["content"]}</div>', unsafe_allow_html=True)
+                with col2:
+                    st.markdown(f'<button id="copy-btn-{i}" onclick="copyText_{i}()" style="background: none; border: none; cursor: pointer; font-size: 16px; padding: 5px;" title="Copy response">📋</button>', unsafe_allow_html=True)
     
     # Chat input
     if prompt := st.chat_input("Ask a question about your documents..."):
@@ -352,11 +378,6 @@ def main():
             
             # Rerun to display new messages
             st.rerun()
-    
-    # Clear chat button (moved to bottom)
-    if st.button("🗑️ Clear Chat"):
-        st.session_state.messages = []
-        st.rerun()
 
 if __name__ == "__main__":
     main() 
