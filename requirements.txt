@@ -4,7 +4,7 @@ langchain-community>=0.0.20
 langchain-chroma>=0.2.0
 langchain-text-splitters>=0.0.1
 langchain-core>=0.1.30
-chromadb==0.4.22
+chromadb==0.4.10
 python-dotenv>=1.0.0
 chardet>=5.0.0
 unstructured>=0.10.0
@@ -14,7 +14,7 @@ python-docx>=0.8.11
 pandas>=2.0.0
 openai>=1.40.0
 requests>=2.30.0
-numpy>=1.24.0
+numpy==1.24.3
 setuptools>=65.5.1
 wheel>=0.38.0
 hnswlib>=0.7.0 
