@@ -363,9 +363,7 @@ def main():
         # Display chat messages
         for i, message in enumerate(st.session_state.messages):
             if message["role"] == "user":
-                st.markdown(f'<div class="user-message">{message["content"]}</div>', unsafe_allow_html=True)
-            else:
-                # Bot message with integrated copy button
+                # User message with integrated copy button
                 message_content = message["content"].replace('"', '\\"').replace('\n', '\\n')
                 copy_script = f"""
                 <script>
@@ -382,8 +380,11 @@ def main():
                 """
                 st.markdown(copy_script, unsafe_allow_html=True)
                 
-                # Bot message panel with copy button integrated at the end
-                st.markdown(f'<div class="bot-message" style="position: relative; padding-right: 40px;">{message["content"]}<button id="copy-btn-{i}" onclick="copyText_{i}()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; cursor: pointer; padding: 5px;" title="Copy response"><div class="copy-icon"></div></button></div>', unsafe_allow_html=True)
+                # User message panel with copy button integrated at the end
+                st.markdown(f'<div class="user-message" style="position: relative; padding-right: 40px;">{message["content"]}<button id="copy-btn-{i}" onclick="copyText_{i}()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; cursor: pointer; padding: 5px;" title="Copy question"><div class="copy-icon"></div></button></div>', unsafe_allow_html=True)
+            else:
+                # Bot message (no copy button)
+                st.markdown(f'<div class="bot-message">{message["content"]}</div>', unsafe_allow_html=True)
     
     # Chat input
     if prompt := st.chat_input("Ask a question about your documents..."):
