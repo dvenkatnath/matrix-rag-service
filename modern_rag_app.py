@@ -12,9 +12,9 @@ except ImportError as e:
     st.stop()
 
 try:
-    from langchain_community.vectorstores import FAISS
+    from langchain_pinecone import Pinecone
 except ImportError as e:
-    st.error(f"Failed to import FAISS vectorstore: {e}")
+    st.error(f"Failed to import Pinecone vectorstore: {e}")
     st.stop()
 
 try:
@@ -263,21 +263,32 @@ def initialize_models():
             openai_api_key=os.getenv("OPENAI_API_KEY")
         )
         
-        # Initialize vector store with error handling for ChromaDB
+        # Initialize vector store with Pinecone
         try:
-            vector_store = FAISS(
-                embedding_function=embeddings_model,
+            # Check for Pinecone API key
+            pinecone_api_key = os.getenv("PINECONE_API_KEY")
+            if not pinecone_api_key:
+                st.error("Pinecone API key not found. Please set PINECONE_API_KEY in your environment.")
+                return None, None, None
+            
+            # Initialize Pinecone
+            vector_store = Pinecone.from_existing_index(
+                index_name="matrix-rag-index",
+                embedding=embeddings_model,
+                text_key="text"
             )
-        except Exception as chroma_error:
-            st.error(f"FAISS initialization error: {chroma_error}")
-            st.info("Trying alternative FAISS configuration...")
-            # Try without persist_directory
+        except Exception as pinecone_error:
+            st.error(f"Pinecone initialization error: {pinecone_error}")
+            st.info("Creating new Pinecone index...")
             try:
-                vector_store = FAISS(
-                    embedding_function=embeddings_model,
+                # Create new index
+                vector_store = Pinecone.from_documents(
+                    documents=[],  # Start with empty documents
+                    embedding=embeddings_model,
+                    index_name="matrix-rag-index"
                 )
             except Exception as e2:
-                st.error(f"Alternative FAISS setup also failed: {e2}")
+                st.error(f"Failed to create Pinecone index: {e2}")
                 return None, None, None
         
         # Initialize retriever
@@ -368,16 +379,20 @@ def ingest_documents(documents):
         
         chunks = text_splitter.split_documents(documents)
         
-        # Add to FAISS vector store
+        # Add to Pinecone vector store
         if st.session_state.vector_store is None:
-            # Create new FAISS index
+            # Create new Pinecone index
             embeddings_model = OpenAIEmbeddings(
                 model="text-embedding-3-small",
                 openai_api_key=os.getenv("OPENAI_API_KEY")
             )
-            st.session_state.vector_store = FAISS.from_documents(chunks, embeddings_model)
+            st.session_state.vector_store = Pinecone.from_documents(
+                chunks, 
+                embeddings_model,
+                index_name="matrix-rag-index"
+            )
         else:
-            # Add to existing FAISS index
+            # Add to existing Pinecone index
             st.session_state.vector_store.add_documents(chunks)
         
         # Update retriever
@@ -463,7 +478,7 @@ def main():
             help="Supported formats: PDF, CSV, Excel, Word, Text"
         )
         
-        if uploaded_files and st.button("📥 Ingest Documents", type="secondary"):
+        if uploaded_files and st.button("�� Ingest Documents", type="secondary"):
             if not st.session_state.vector_store:
                 st.markdown('<div class="error-message">Please initialize the RAG system first.</div>', unsafe_allow_html=True)
             else:
