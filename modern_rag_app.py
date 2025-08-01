@@ -98,6 +98,32 @@ st.markdown("""
         margin: 1rem 0;
         border: 1px solid #e9ecef;
     }
+    
+    .copy-icon {
+        width: 16px;
+        height: 16px;
+        position: relative;
+        display: inline-block;
+    }
+    
+    .copy-icon::before,
+    .copy-icon::after {
+        content: '';
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        border: 2px solid #333;
+    }
+    
+    .copy-icon::before {
+        top: 0;
+        left: 0;
+    }
+    
+    .copy-icon::after {
+        top: 4px;
+        left: 4px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -352,7 +378,7 @@ def main():
                     const button = document.getElementById('copy-btn-{i}');
                     button.innerHTML = '✅';
                     setTimeout(() => {{
-                        button.innerHTML = '⏷';
+                        button.innerHTML = '<div class="copy-icon"></div>';
                     }}, 1000);
                 }}
                 </script>
@@ -360,7 +386,7 @@ def main():
                 st.markdown(copy_script, unsafe_allow_html=True)
                 
                 # Copy button positioned after the message
-                st.markdown(f'<div style="text-align: right; margin-top: 5px;"><button id="copy-btn-{i}" onclick="copyText_{i}()" style="background: none; border: none; cursor: pointer; font-size: 16px; padding: 5px; color: #6c757d;" title="Copy response">⏷</button></div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="text-align: right; margin-top: 5px;"><button id="copy-btn-{i}" onclick="copyText_{i}()" style="background: none; border: none; cursor: pointer; padding: 5px;" title="Copy response"><div class="copy-icon"></div></button></div>', unsafe_allow_html=True)
     
     # Chat input
     if prompt := st.chat_input("Ask a question about your documents..."):
