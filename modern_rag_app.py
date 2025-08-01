@@ -369,13 +369,27 @@ def main():
                 <script>
                 function copyText_{i}() {{
                     const text = `{message_content}`;
+                    
+                    // Create or get the notification element
+                    let notification = document.getElementById('copy-notification-{i}');
+                    if (!notification) {{
+                        notification = document.createElement('div');
+                        notification.id = 'copy-notification-{i}';
+                        notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 10px 15px; border-radius: 5px; z-index: 10000; font-family: Arial, sans-serif; font-size: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); display: none;';
+                        document.body.appendChild(notification);
+                    }}
+                    
+                    // Copy to clipboard
                     if (navigator.clipboard && window.isSecureContext) {{
                         navigator.clipboard.writeText(text).then(() => {{
-                            const button = document.getElementById('copy-btn-{i}');
-                            button.innerHTML = '✅';
+                            // Show notification
+                            notification.textContent = 'Question copied';
+                            notification.style.display = 'block';
+                            
+                            // Hide notification after 3 seconds
                             setTimeout(() => {{
-                                button.innerHTML = '<div class="copy-icon"></div>';
-                            }}, 1000);
+                                notification.style.display = 'none';
+                            }}, 3000);
                         }});
                     }} else {{
                         // Fallback for older browsers
@@ -386,11 +400,14 @@ def main():
                         document.execCommand('copy');
                         document.body.removeChild(textArea);
                         
-                        const button = document.getElementById('copy-btn-{i}');
-                        button.innerHTML = '✅';
+                        // Show notification
+                        notification.textContent = 'Question copied';
+                        notification.style.display = 'block';
+                        
+                        // Hide notification after 3 seconds
                         setTimeout(() => {{
-                            button.innerHTML = '<div class="copy-icon"></div>';
-                        }}, 1000);
+                            notification.style.display = 'none';
+                        }}, 3000);
                     }}
                 }}
                 </script>
