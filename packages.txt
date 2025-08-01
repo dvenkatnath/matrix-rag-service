@@ -1,0 +1,4 @@
+# System dependencies for Streamlit Cloud
+poppler-utils
+tesseract-ocr
+libmagic 
