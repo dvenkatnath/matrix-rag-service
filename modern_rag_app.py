@@ -151,9 +151,9 @@ def initialize_models():
             openai_api_key=os.getenv("OPENAI_API_KEY")
         )
         
-        # Initialize LLM with lower temperature for more consistent responses
+        # Initialize LLM
         llm = ChatOpenAI(
-            temperature=0.1,  # Lower temperature for more consistent responses
+            temperature=0.5, 
             model='gpt-4o-mini',
             openai_api_key=os.getenv("OPENAI_API_KEY")
         )
@@ -165,13 +165,8 @@ def initialize_models():
             persist_directory=CHROMA_PATH,
         )
         
-        # Initialize retriever with better parameters for consistency
-        retriever = vector_store.as_retriever(
-            search_kwargs={
-                'k': 8,  # Retrieve more documents for better coverage
-                'score_threshold': 0.7  # Only retrieve highly relevant documents
-            }
-        )
+        # Initialize retriever
+        retriever = vector_store.as_retriever(search_kwargs={'k': 5})
         
         return llm, vector_store, retriever
     except Exception as e:
@@ -179,7 +174,7 @@ def initialize_models():
         return None, None, None
 
 def load_documents_from_files(uploaded_files):
-    """Load documents from uploaded files with improved stability"""
+    """Load documents from uploaded files"""
     documents = []
     
     for uploaded_file in uploaded_files:
@@ -193,9 +188,7 @@ def load_documents_from_files(uploaded_files):
             
             if file_extension == '.pdf':
                 try:
-                    # Use PyPDFLoader instead of UnstructuredPDFLoader for stability
-                    from langchain_community.document_loaders import PyPDFLoader
-                    loader = PyPDFLoader(tmp_path)
+                    loader = UnstructuredPDFLoader(tmp_path)
                     docs = loader.load()
                     documents.extend(docs)
                     st.success(f"✅ Successfully loaded PDF: {uploaded_file.name}")
@@ -203,39 +196,22 @@ def load_documents_from_files(uploaded_files):
                     st.error(f"❌ Error loading PDF {uploaded_file.name}: {e}")
                     
             elif file_extension == '.csv':
-                try:
-                    loader = CSVLoader(tmp_path)
-                    docs = loader.load()
-                    documents.extend(docs)
-                    st.success(f"✅ Successfully loaded CSV: {uploaded_file.name}")
-                except Exception as e:
-                    st.error(f"❌ Error loading CSV {uploaded_file.name}: {e}")
+                loader = CSVLoader(tmp_path)
+                docs = loader.load()
+                documents.extend(docs)
+                st.success(f"✅ Successfully loaded CSV: {uploaded_file.name}")
                 
             elif file_extension in ['.xlsx', '.xls']:
-                try:
-                    # Use pandas for Excel files instead of UnstructuredExcelLoader
-                    import pandas as pd
-                    df = pd.read_excel(tmp_path)
-                    text_content = df.to_string()
-                    from langchain.schema import Document
-                    doc = Document(page_content=text_content, metadata={"source": uploaded_file.name})
-                    documents.append(doc)
-                    st.success(f"✅ Successfully loaded Excel: {uploaded_file.name}")
-                except Exception as e:
-                    st.error(f"❌ Error loading Excel {uploaded_file.name}: {e}")
+                loader = UnstructuredExcelLoader(tmp_path)
+                docs = loader.load()
+                documents.extend(docs)
+                st.success(f"✅ Successfully loaded Excel: {uploaded_file.name}")
                 
             elif file_extension in ['.docx', '.doc']:
-                try:
-                    # Use python-docx for Word files instead of UnstructuredWordDocumentLoader
-                    from docx import Document as DocxDocument
-                    docx = DocxDocument(tmp_path)
-                    text_content = "\n".join([paragraph.text for paragraph in docx.paragraphs])
-                    from langchain.schema import Document
-                    doc = Document(page_content=text_content, metadata={"source": uploaded_file.name})
-                    documents.append(doc)
-                    st.success(f"✅ Successfully loaded Word: {uploaded_file.name}")
-                except Exception as e:
-                    st.error(f"❌ Error loading Word {uploaded_file.name}: {e}")
+                loader = UnstructuredWordDocumentLoader(tmp_path)
+                docs = loader.load()
+                documents.extend(docs)
+                st.success(f"✅ Successfully loaded Word: {uploaded_file.name}")
                 
             elif file_extension == '.txt':
                 try:
@@ -261,44 +237,30 @@ def load_documents_from_files(uploaded_files):
     return documents
 
 def ingest_documents(documents):
-    """Ingest documents into the vector store with improved error handling"""
+    """Ingest documents into the vector store"""
     if not documents:
         st.warning("No documents to ingest.")
         return False
     
     try:
-        # Split documents into smaller chunks for better memory management
+        # Split documents into chunks
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=300,  # Smaller chunks to reduce memory usage
-            chunk_overlap=50,  # Reduced overlap
+            chunk_size=500,
+            chunk_overlap=150,
             length_function=len,
             is_separator_regex=False,
         )
         
-        # Process documents in batches to avoid memory issues
-        batch_size = 10
-        total_chunks = 0
+        chunks = text_splitter.split_documents(documents)
+        uuids = [str(uuid4()) for _ in range(len(chunks))]
         
-        for i in range(0, len(documents), batch_size):
-            batch = documents[i:i + batch_size]
-            
-            # Split batch into chunks
-            chunks = text_splitter.split_documents(batch)
-            uuids = [str(uuid4()) for _ in range(len(chunks))]
-            
-            # Add batch to vector store
-            st.session_state.vector_store.add_documents(
-                documents=chunks,
-                ids=uuids,
-            )
-            
-            total_chunks += len(chunks)
-            
-            # Clear memory
-            del chunks
-            del uuids
+        # Add to vector store
+        st.session_state.vector_store.add_documents(
+            documents=chunks,
+            ids=uuids,
+        )
         
-        st.success(f"✅ Successfully ingested {total_chunks} document chunks")
+        st.success(f"✅ Successfully ingested {len(chunks)} document chunks")
         return True
     except Exception as e:
         st.error(f"Error ingesting documents: {e}")
@@ -310,43 +272,18 @@ def get_response(user_message):
         # Retrieve relevant documents
         docs = st.session_state.retriever.invoke(user_message)
         
-        # Filter out low-quality matches and deduplicate
-        unique_docs = []
-        seen_content = set()
-        for doc in docs:
-            # Remove very short or low-quality content
-            if len(doc.page_content.strip()) > 20:
-                # Create a simple hash to avoid exact duplicates
-                content_hash = hash(doc.page_content.strip())
-                if content_hash not in seen_content:
-                    seen_content.add(content_hash)
-                    unique_docs.append(doc)
+        # Concatenate retrieved knowledge
+        knowledge = "\n\n".join(doc.page_content for doc in docs)
         
-        # Concatenate retrieved knowledge with better formatting
-        knowledge_parts = []
-        for i, doc in enumerate(unique_docs[:6]):  # Limit to top 6 most relevant
-            knowledge_parts.append(f"Document {i+1}:\n{doc.page_content.strip()}")
-        
-        knowledge = "\n\n---\n\n".join(knowledge_parts)
-        
-        # Create improved prompt for more consistent responses
+        # Create prompt
         rag_prompt = f"""
-        You are a helpful assistant answering questions based on the provided knowledge.
+        You are an assistant answering questions based on the provided knowledge.
+        You must answer only using the "The knowledge" section, without adding any external information.
+        You should not mention that the knowledge was retrieved.
         
-        IMPORTANT INSTRUCTIONS:
-        1. Answer ONLY using information from the provided knowledge
-        2. If the knowledge doesn't contain enough information to answer the question, say "I don't have enough information to answer this question based on the provided documents."
-        3. Be consistent and accurate in your responses
-        4. Do not add external information or assumptions
-        5. If there are conflicting pieces of information, mention this and provide the most relevant information
-        6. Keep your answers concise but complete
+        The question: {user_message}
         
-        Question: {user_message}
-        
-        Knowledge from documents:
-        {knowledge}
-        
-        Answer based on the knowledge above:
+        The knowledge: {knowledge}
         """
         
         # Get response from LLM
