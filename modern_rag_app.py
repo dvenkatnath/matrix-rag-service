@@ -12,7 +12,7 @@ except ImportError as e:
     st.stop()
 
 try:
-    from langchain_pinecone import Pinecone
+    from langchain_community.vectorstores import Pinecone
 except ImportError as e:
     st.error(f"Failed to import Pinecone vectorstore: {e}")
     st.stop()
