@@ -112,7 +112,7 @@ st.markdown("""
         position: absolute;
         width: 12px;
         height: 12px;
-        border: 2px solid #6c757d;
+        border: 1px solid #6c757d;
     }
     
     .copy-icon::before {
