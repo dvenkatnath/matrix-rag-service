@@ -263,12 +263,25 @@ def initialize_models():
             openai_api_key=os.getenv("OPENAI_API_KEY")
         )
         
-        # Initialize vector store
-        vector_store = Chroma(
-            collection_name="example_collection",
-            embedding_function=embeddings_model,
-            persist_directory=CHROMA_PATH,
-        )
+        # Initialize vector store with error handling for ChromaDB
+        try:
+            vector_store = Chroma(
+                collection_name="example_collection",
+                embedding_function=embeddings_model,
+                persist_directory=CHROMA_PATH,
+            )
+        except RuntimeError as chroma_error:
+            st.error(f"ChromaDB initialization error: {chroma_error}")
+            st.info("Trying alternative ChromaDB configuration...")
+            # Try without persist_directory
+            try:
+                vector_store = Chroma(
+                    collection_name="example_collection",
+                    embedding_function=embeddings_model,
+                )
+            except Exception as e2:
+                st.error(f"Alternative ChromaDB setup also failed: {e2}")
+                return None, None, None
         
         # Initialize retriever
         retriever = vector_store.as_retriever(search_kwargs={'k': 5})
