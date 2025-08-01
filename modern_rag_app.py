@@ -324,60 +324,42 @@ def main():
                         if success:
                             st.markdown('<div class="status-success">✅ Documents ingested successfully!</div>', unsafe_allow_html=True)
     
-    # Main content area
-    col1, col2 = st.columns([2, 1])
+    # Main content area - Full width chat
+    st.markdown("### 💬 Chat Interface")
     
-    with col1:
-        st.markdown("### 💬 Chat Interface")
-        
-        # Chat container
-        chat_container = st.container()
-        
-        with chat_container:
-            # Display chat messages
-            for message in st.session_state.messages:
-                if message["role"] == "user":
-                    st.markdown(f'<div class="user-message">{message["content"]}</div>', unsafe_allow_html=True)
-                else:
-                    st.markdown(f'<div class="bot-message">{message["content"]}</div>', unsafe_allow_html=True)
-        
-        # Chat input
-        if prompt := st.chat_input("Ask a question about your documents..."):
-            if not st.session_state.llm or not st.session_state.retriever:
-                st.error("Please initialize the RAG system first.")
+    # Chat container
+    chat_container = st.container()
+    
+    with chat_container:
+        # Display chat messages
+        for message in st.session_state.messages:
+            if message["role"] == "user":
+                st.markdown(f'<div class="user-message">{message["content"]}</div>', unsafe_allow_html=True)
             else:
-                # Add user message to chat history
-                st.session_state.messages.append({"role": "user", "content": prompt})
-                
-                # Get response
-                with st.spinner("Generating response..."):
-                    response = get_response(prompt)
-                
-                # Add assistant response to chat history
-                st.session_state.messages.append({"role": "assistant", "content": response})
-                
-                # Rerun to display new messages
-                st.rerun()
+                st.markdown(f'<div class="bot-message">{message["content"]}</div>', unsafe_allow_html=True)
     
-    with col2:
-        st.markdown("### 📈 Statistics")
-        
-        if st.session_state.vector_store:
-            try:
-                collection = st.session_state.vector_store._collection
-                count = collection.count()
-                st.metric("Documents in Database", count)
-            except:
-                st.metric("Documents in Database", "Unknown")
+    # Chat input
+    if prompt := st.chat_input("Ask a question about your documents..."):
+        if not st.session_state.llm or not st.session_state.retriever:
+            st.error("Please initialize the RAG system first.")
         else:
-            st.metric("Documents in Database", 0)
-        
-        st.metric("Chat Messages", len(st.session_state.messages))
-        
-        # Clear chat button
-        if st.button("🗑️ Clear Chat"):
-            st.session_state.messages = []
+            # Add user message to chat history
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            
+            # Get response
+            with st.spinner("Generating response..."):
+                response = get_response(prompt)
+            
+            # Add assistant response to chat history
+            st.session_state.messages.append({"role": "assistant", "content": response})
+            
+            # Rerun to display new messages
             st.rerun()
+    
+    # Clear chat button (moved to bottom)
+    if st.button("🗑️ Clear Chat"):
+        st.session_state.messages = []
+        st.rerun()
 
 if __name__ == "__main__":
     main() 
