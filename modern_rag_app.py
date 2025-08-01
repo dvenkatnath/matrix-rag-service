@@ -363,59 +363,15 @@ def main():
         # Display chat messages
         for i, message in enumerate(st.session_state.messages):
             if message["role"] == "user":
-                # User message with integrated copy button
-                message_content = message["content"].replace('"', '\\"').replace('\n', '\\n')
-                copy_script = f"""
-                <script>
-                function copyText_{i}() {{
-                    const text = `{message_content}`;
-                    
-                    // Create or get the notification element
-                    let notification = document.getElementById('copy-notification-{i}');
-                    if (!notification) {{
-                        notification = document.createElement('div');
-                        notification.id = 'copy-notification-{i}';
-                        notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 10px 15px; border-radius: 5px; z-index: 10000; font-family: Arial, sans-serif; font-size: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); display: none;';
-                        document.body.appendChild(notification);
-                    }}
-                    
-                    // Copy to clipboard
-                    if (navigator.clipboard && window.isSecureContext) {{
-                        navigator.clipboard.writeText(text).then(() => {{
-                            // Show notification
-                            notification.textContent = 'Question copied';
-                            notification.style.display = 'block';
-                            
-                            // Hide notification after 3 seconds
-                            setTimeout(() => {{
-                                notification.style.display = 'none';
-                            }}, 3000);
-                        }});
-                    }} else {{
-                        // Fallback for older browsers
-                        const textArea = document.createElement('textarea');
-                        textArea.value = text;
-                        document.body.appendChild(textArea);
-                        textArea.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(textArea);
-                        
-                        // Show notification
-                        notification.textContent = 'Question copied';
-                        notification.style.display = 'block';
-                        
-                        // Hide notification after 3 seconds
-                        setTimeout(() => {{
-                            notification.style.display = 'none';
-                        }}, 3000);
-                    }}
-                }}
-                </script>
-                """
-                st.markdown(copy_script, unsafe_allow_html=True)
+                # User message with copy functionality
+                st.markdown(f'<div class="user-message">{message["content"]}</div>', unsafe_allow_html=True)
                 
-                # User message panel with copy button integrated at the end
-                st.markdown(f'<div class="user-message" style="position: relative; padding-right: 40px;">{message["content"]}<button id="copy-btn-{i}" onclick="copyText_{i}()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; cursor: pointer; padding: 5px;" title="Copy question"><div class="copy-icon"></div></button></div>', unsafe_allow_html=True)
+                # Copy button that displays the text in a selectable format
+                if st.button("📋", key=f"copy_{i}", help="Copy question"):
+                    st.success("Question copied")
+                    # Display the text in a code block for easy selection and copying
+                    st.code(message["content"], language="text")
+                    
             else:
                 # Bot message (no copy button)
                 st.markdown(f'<div class="bot-message">{message["content"]}</div>', unsafe_allow_html=True)
