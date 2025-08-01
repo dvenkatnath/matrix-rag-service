@@ -54,15 +54,14 @@ st.markdown("""
     }
     
     .user-message {
-        background: #f8f9fa;
-        color: #495057;
+        background: #007bff;
+        color: white;
         padding: 0.75rem 1rem;
         border-radius: 15px;
         margin: 0.5rem 0;
         text-align: right;
         max-width: 80%;
         margin-left: auto;
-        border: 1px solid #e9ecef;
     }
     
     .bot-message {
@@ -97,32 +96,6 @@ st.markdown("""
         border-radius: 8px;
         margin: 1rem 0;
         border: 1px solid #e9ecef;
-    }
-    
-    .copy-icon {
-        width: 16px;
-        height: 16px;
-        position: relative;
-        display: inline-block;
-    }
-    
-    .copy-icon::before,
-    .copy-icon::after {
-        content: '';
-        position: absolute;
-        width: 12px;
-        height: 12px;
-        border: 1px solid #6c757d;
-    }
-    
-    .copy-icon::before {
-        top: 0;
-        left: 0;
-    }
-    
-    .copy-icon::after {
-        top: 4px;
-        left: 4px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -295,9 +268,11 @@ def get_response(user_message):
 
 # Main application
 def main():
+    # Header
+    st.markdown('<div class="main-header"><h1>🤖 Matrix RAG Service</h1><p>Intelligent Document Processing & Chat Interface</p></div>', unsafe_allow_html=True)
+    
     # Sidebar
     with st.sidebar:
-        st.markdown("### 🤖 Matrix - RAG Service")
         st.markdown("### ⚙️ Configuration")
         
         # Check API key
@@ -348,77 +323,60 @@ def main():
                         success = ingest_documents(documents)
                         if success:
                             st.markdown('<div class="status-success">✅ Documents ingested successfully!</div>', unsafe_allow_html=True)
+    
+    # Main content area
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.markdown("### 💬 Chat Interface")
+        
+        # Chat container
+        chat_container = st.container()
+        
+        with chat_container:
+            # Display chat messages
+            for message in st.session_state.messages:
+                if message["role"] == "user":
+                    st.markdown(f'<div class="user-message">{message["content"]}</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown(f'<div class="bot-message">{message["content"]}</div>', unsafe_allow_html=True)
+        
+        # Chat input
+        if prompt := st.chat_input("Ask a question about your documents..."):
+            if not st.session_state.llm or not st.session_state.retriever:
+                st.error("Please initialize the RAG system first.")
+            else:
+                # Add user message to chat history
+                st.session_state.messages.append({"role": "user", "content": prompt})
+                
+                # Get response
+                with st.spinner("Generating response..."):
+                    response = get_response(prompt)
+                
+                # Add assistant response to chat history
+                st.session_state.messages.append({"role": "assistant", "content": response})
+                
+                # Rerun to display new messages
+                st.rerun()
+    
+    with col2:
+        st.markdown("### 📈 Statistics")
+        
+        if st.session_state.vector_store:
+            try:
+                collection = st.session_state.vector_store._collection
+                count = collection.count()
+                st.metric("Documents in Database", count)
+            except:
+                st.metric("Documents in Database", "Unknown")
+        else:
+            st.metric("Documents in Database", 0)
+        
+        st.metric("Chat Messages", len(st.session_state.messages))
         
         # Clear chat button
         if st.button("🗑️ Clear Chat"):
             st.session_state.messages = []
-            st.rerun()
-    
-    # Main content area - Full width chat
-    
-    # Chat container
-    chat_container = st.container()
-    
-    with chat_container:
-        # Display chat messages
-        for i, message in enumerate(st.session_state.messages):
-            if message["role"] == "user":
-                # User message with integrated copy button
-                message_content = message["content"].replace('"', '\\"').replace('\n', '\\n')
-                copy_script = f"""
-                <script>
-                function copyText_{i}() {{
-                    const text = `{message_content}`;
-                    if (navigator.clipboard && window.isSecureContext) {{
-                        navigator.clipboard.writeText(text).then(() => {{
-                            const button = document.getElementById('copy-btn-{i}');
-                            button.innerHTML = '✅';
-                            setTimeout(() => {{
-                                button.innerHTML = '<div class="copy-icon"></div>';
-                            }}, 1000);
-                        }});
-                    }} else {{
-                        // Fallback for older browsers
-                        const textArea = document.createElement('textarea');
-                        textArea.value = text;
-                        document.body.appendChild(textArea);
-                        textArea.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(textArea);
-                        
-                        const button = document.getElementById('copy-btn-{i}');
-                        button.innerHTML = '✅';
-                        setTimeout(() => {{
-                            button.innerHTML = '<div class="copy-icon"></div>';
-                        }}, 1000);
-                    }}
-                }}
-                </script>
-                """
-                st.markdown(copy_script, unsafe_allow_html=True)
-                
-                # User message panel with copy button integrated at the end
-                st.markdown(f'<div class="user-message" style="position: relative; padding-right: 40px;">{message["content"]}<button id="copy-btn-{i}" onclick="copyText_{i}()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; cursor: pointer; padding: 5px;" title="Copy question"><div class="copy-icon"></div></button></div>', unsafe_allow_html=True)
-            else:
-                # Bot message (no copy button)
-                st.markdown(f'<div class="bot-message">{message["content"]}</div>', unsafe_allow_html=True)
-    
-    # Chat input
-    if prompt := st.chat_input("Ask a question about your documents..."):
-        if not st.session_state.llm or not st.session_state.retriever:
-            st.error("Please initialize the RAG system first.")
-        else:
-            # Add user message to chat history
-            st.session_state.messages.append({"role": "user", "content": prompt})
-            
-            # Get response
-            with st.spinner("Generating response..."):
-                response = get_response(prompt)
-            
-            # Add assistant response to chat history
-            st.session_state.messages.append({"role": "assistant", "content": response})
-            
-            # Rerun to display new messages
             st.rerun()
 
 if __name__ == "__main__":
