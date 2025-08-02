@@ -73,22 +73,37 @@ def load_documents(directory: str):
                 print(f"Error loading PDF {pdf_file}: {e2}")
                 continue
 
-    # Load CSVs
+    # Load CSVs with error handling
     for file in Path(directory).rglob("*.csv"):
-        loader = CSVLoader(str(file))
-        documents.extend(loader.load())
+        try:
+            loader = CSVLoader(str(file))
+            csv_docs = loader.load()
+            documents.extend(csv_docs)
+            print(f"Successfully loaded CSV: {file}")
+        except Exception as e:
+            print(f"Error loading CSV {file}: {e}")
 
-    # Load Excel files
+    # Load Excel files with error handling
     for file in Path(directory).rglob("*.xlsx"):
-        loader = UnstructuredExcelLoader(str(file))
-        documents.extend(loader.load())
+        try:
+            loader = UnstructuredExcelLoader(str(file))
+            excel_docs = loader.load()
+            documents.extend(excel_docs)
+            print(f"Successfully loaded Excel: {file}")
+        except Exception as e:
+            print(f"Error loading Excel {file}: {e}")
 
-    # Load Word files
+    # Load Word files with error handling
     for file in Path(directory).rglob("*.docx"):
-        loader = UnstructuredWordDocumentLoader(str(file))
-        documents.extend(loader.load())
+        try:
+            loader = UnstructuredWordDocumentLoader(str(file))
+            word_docs = loader.load()
+            documents.extend(word_docs)
+            print(f"Successfully loaded Word: {file}")
+        except Exception as e:
+            print(f"Error loading Word {file}: {e}")
 
-    # Load Text files with encoding detection
+    # Load Text files with encoding detection and error handling
     for file in Path(directory).rglob("*.txt"):
         try:
             # Try to detect encoding
@@ -100,17 +115,34 @@ def load_documents(directory: str):
             
             # Load with detected encoding
             loader = TextLoader(str(file), encoding=encoding)
-            documents.extend(loader.load())
+            text_docs = loader.load()
+            documents.extend(text_docs)
+            print(f"Successfully loaded Text: {file} (encoding: {encoding})")
         except Exception as e:
             print(f"Warning: Could not load {file} with detected encoding. Trying utf-8: {e}")
             try:
                 # Fallback to utf-8
                 loader = TextLoader(str(file), encoding='utf-8')
-                documents.extend(loader.load())
+                text_docs = loader.load()
+                documents.extend(text_docs)
+                print(f"Successfully loaded Text: {file} (encoding: utf-8)")
             except Exception as e2:
                 print(f"Error: Could not load {file} with utf-8 encoding either: {e2}")
                 continue
 
+    print(f"\n📊 Document Loading Summary:")
+    print(f"Total documents loaded: {len(documents)}")
+    
+    # Count by file type
+    file_types = {}
+    for doc in documents:
+        source = doc.metadata.get('source', 'Unknown')
+        ext = Path(source).suffix.lower()
+        file_types[ext] = file_types.get(ext, 0) + 1
+    
+    for ext, count in file_types.items():
+        print(f"  {ext}: {count} documents")
+    
     return documents
 
 # Load and process documents
