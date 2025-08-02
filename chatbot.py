@@ -26,17 +26,33 @@ vector_store = Chroma(
 # Set up the retriever with better parameters for more accurate answers
 retriever = vector_store.as_retriever(
     search_kwargs={
-        'k': 15  # Retrieve more documents for better coverage and summarization
+        'k': 15,  # Retrieve more documents for better coverage and summarization
+        'fetch_k': 30,  # Fetch more candidates before selecting top k
+        'lambda_mult': 0.3  # Balance between similarity and diversity
     }
 )
 
 # Function for streaming responses
 def stream_response(message, history):
-    # Retrieve relevant chunks based on the question
+    # Retrieve relevant chunks based on the question with improved strategy
     docs = retriever.invoke(message)
-
-    # Concatenate retrieved knowledge
-    knowledge = "\n\n".join(doc.page_content for doc in docs)
+    
+    # Filter and rank documents by relevance
+    if docs:
+        # Sort by metadata score if available, otherwise keep original order
+        try:
+            docs = sorted(docs, key=lambda x: getattr(x, 'metadata', {}).get('score', 0), reverse=True)
+        except:
+            pass
+    
+    # Concatenate retrieved knowledge with source information
+    knowledge_parts = []
+    for i, doc in enumerate(docs):
+        source = doc.metadata.get('source', 'Unknown')
+        content = doc.page_content
+        knowledge_parts.append(f"[Source: {source}]\n{content}")
+    
+    knowledge = "\n\n".join(knowledge_parts)
 
     # Ensure there's a user message
     if message:
@@ -44,6 +60,10 @@ def stream_response(message, history):
 
         rag_prompt = f"""
         You are an expert assistant that can answer questions, provide summaries, and analyze information based on the provided knowledge.
+        
+        RETRIEVAL ANALYSIS:
+        - Number of sources retrieved: {len(docs)}
+        - Sources: {', '.join(set([doc.metadata.get('source', 'Unknown') for doc in docs]))}
         
         IMPORTANT INSTRUCTIONS:
         1. Answer ONLY using the information provided in "The knowledge" section
@@ -56,6 +76,8 @@ def stream_response(message, history):
         8. If asked for a specific number of sentences, try to match that requirement
         9. Search carefully through all the provided knowledge for relevant information
         10. Provide detailed and comprehensive responses when information is available
+        11. Consider the source of information when providing answers
+        12. If multiple sources contain conflicting information, mention this and provide the most relevant details
         
         The question: {message}
         
