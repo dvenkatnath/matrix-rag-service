@@ -26,9 +26,7 @@ vector_store = Chroma(
 # Set up the retriever with better parameters for more accurate answers
 retriever = vector_store.as_retriever(
     search_kwargs={
-        'k': 15,  # Retrieve more documents for better coverage and summarization
-        'fetch_k': 30,  # Fetch more candidates before selecting top k
-        'lambda_mult': 0.3  # Balance between similarity and diversity
+        'k': 15  # Retrieve more documents for better coverage and summarization
     }
 )
 
